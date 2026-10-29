@@ -224,7 +224,9 @@ const server = createServer(async (req, res) => {
 
 if (DEV) {
   const { createServer: createViteServer } = await import('vite');
-  vite = await createViteServer({ root: ROOT, server: { middlewareMode: true, hmr: { server } }, appType: 'spa' });
+  // 'native' imports vite.config.ts directly. The default bundles it to a temp file and deletes it, and
+  // `node --watch` sees that deleted import and restarts the server in a loop.
+  vite = await createViteServer({ root: ROOT, configLoader: 'native', server: { middlewareMode: true, hmr: { server } }, appType: 'spa' });
 }
 
 // Keep the history going while the server runs, even if the page isn't open.

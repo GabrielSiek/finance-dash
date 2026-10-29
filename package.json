@@ -9,7 +9,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "dev": "node --watch-path=server --watch-path=shared --env-file-if-exists=.env server/index.ts --dev",
+    "dev": "node --watch --env-file-if-exists=.env server/index.ts --dev",
     "build": "vite build",
     "prestart": "yarn build",
     "start": "node --env-file-if-exists=.env server/index.ts",
