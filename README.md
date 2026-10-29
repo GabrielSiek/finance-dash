@@ -25,16 +25,17 @@ A personal finance app for a Brazilian investor: investments, goals and spending
 
 ## Setup
 
-Requires Node.js 22.9+ and has no npm dependencies.
+Requires Node.js 22.18+ (the server runs its TypeScript directly) and [Yarn](https://classic.yarnpkg.com) 1.x.
 
-1. In [dashboard.pluggy.ai](https://dashboard.pluggy.ai), open your application and copy its **Client ID** and **Client Secret**.
-2. Put them in `.env` in the project root (copy `.env.example` if `.env` doesn't exist yet):
+1. Run `yarn install`.
+2. In [dashboard.pluggy.ai](https://dashboard.pluggy.ai), open your application and copy its **Client ID** and **Client Secret**.
+3. Put them in `.env` in the project root (copy `.env.example` if `.env` doesn't exist yet):
    ```
    PLUGGY_CLIENT_ID=...
    PLUGGY_CLIENT_SECRET=...
    ```
    You don't need the API key shown in the Pluggy dashboard. It expires after 2 hours, and the server creates new ones from the ID and secret.
-3. Run `npm start` and open http://localhost:3000.
+4. Run `yarn start` (it builds the client first) and open http://localhost:3000.
 
 ### Trying it with test data
 In **Contas conectadas → Conectar conta**, pick **Pluggy Bank** (sandbox) and log in with `user-ok` / `password-ok`. If it asks for an MFA code, use `123456`.
@@ -65,13 +66,16 @@ How complete the data is depends on the institution. Some don't report transacti
 ## How it works
 
 ```
-browser (public/)  ──►  server.js  ──►  api.pluggy.ai
-  index.html            (keeps secret,
-  js/main.js            caches API key
-  js/investments.js     and transactions)
-  js/spending.js
-  js/settings.js
+browser (src/, React)  ──►  server/ (Node)  ──►  api.pluggy.ai
+                            keeps the secret,
+                            caches API key
+                            and transactions
 ```
+
+Everything is TypeScript. `shared/types.ts` describes the JSON the server sends, and both sides compile against it.
+
+- **Client** (`src/`): React, styled-components, Chart.js and axios, built with Vite. `App.tsx` holds the shell and the hash routes, and `store.ts` holds the shared data and the actions that load it. Each page under `pages/` and each shared piece under `components/` is a folder with `index.tsx` and `styles.ts` (`import * as Styled from './styles'`). Shared styled primitives (cards, chips, buttons, tables…) are in `components/ui`, and the color tokens are CSS variables in `styles/global.ts`.
+- **Server** (`server/`): plain `node:http`, run by Node's built‑in type stripping, so it has no build step. `index.ts` has the routes, `pluggy.ts` the API client, and `portfolio.ts`, `spending.ts` and `settings.ts` the data logic.
 
 - The server listens only on `127.0.0.1`, so your Client Secret never reaches the browser. `.env` and `data/` are in `.gitignore`.
 - Pluggy has no endpoint that lists all your items, so the server stores your connection IDs in `data/items.json`. You can also add IDs by hand in **Contas conectadas** or with `PLUGGY_ITEM_IDS` in `.env`.
@@ -92,4 +96,8 @@ browser (public/)  ──►  server.js  ──►  api.pluggy.ai
 | `POST /api/sync` | Ask Pluggy to re‑sync every connection |
 | `POST /api/items` · `POST /api/items/:id/refresh` · `DELETE /api/items/:id` | Add, sync or remove one connection (removing doesn't delete it on Pluggy) |
 
-Use `npm run dev` to restart the server automatically when you edit files.
+| Command | |
+|---|---|
+| `yarn dev` | Server plus Vite on http://localhost:3000. Client edits hot-reload, and server edits restart it. |
+| `yarn start` | Builds the client into `dist/` and serves it |
+| `yarn typecheck` | Type-checks the client and the server |
